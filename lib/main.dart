@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
@@ -7,26 +8,19 @@ import 'package:location/location.dart';
 
 void main() => runApp(new MyApp());
 
-class MyApp extends StatelessWidget {
+
+
+class MyApp extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return new MaterialApp(
-      title: 'mygps',
-      theme: ThemeData.dark(),
-      debugShowCheckedModeBanner: false,
-      home: new MyHomePage(),
-    );
-  }
+  _MyAppState createState()=>new _MyAppState();
 }
 
-class MyHomePage extends StatefulWidget {
-  @override
-  _MyHomePageState createState() => new _MyHomePageState();
-}
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyAppState extends State<MyApp> {
+  GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey();
   Map<String, double> _startLocation;
   Map<String, double> _currentLocation;
+  bool _useDarkTheme = false;
 
   StreamSubscription<Map<String, double>> _locationSubscription;
 
@@ -74,10 +68,6 @@ class _MyHomePageState extends State<MyHomePage> {
       location = null;
     }
 
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    //if (!mounted) return;
 
     setState(() {
       _startLocation = location;
@@ -113,38 +103,110 @@ class _MyHomePageState extends State<MyHomePage> {
             ? 'Has permission : Yes'
             : "Has permission : No")));
 
-    return new Scaffold(
-            appBar: new AppBar(
-              leading: new Icon(Icons.map),
-              title: new Text('My GPS'),
-            ),
-            body: _currentLocation != null ? new FlutterMap(
-              options: new MapOptions(
-                center: new LatLng(_currentLocation['latitude'],
-                    _currentLocation['longitude']),
-                zoom: 15.0,
-              ),
-              layers: [
-                new TileLayerOptions(
-                  urlTemplate: "https://maps.api.sygic.com/tile/{apiKey}/{z}/{x}/{y}",
-                  additionalOptions: {
-                    'apiKey': 'ffDgde5rCn6jjR35GJWD82hUC',
-                  },
-                ),
 
-                new MarkerLayerOptions(
-                  markers: [
-                    _buildMarker(new LatLng(_currentLocation['latitude'],
-                        _currentLocation['longitude'])),
+    return new MaterialApp(
+      title: 'my-gps',
+      theme: _useDarkTheme==true?ThemeData.dark():ThemeData.light().copyWith(primaryColor: Colors.grey,),
+      debugShowCheckedModeBanner: false,
+      home: new Scaffold(
+        key: _scaffoldKey,
+              drawer: Drawer(
+                child: ListView(
+                  children: <Widget>[
+                    new UserAccountsDrawerHeader(
+                      accountName: new Text('Pranav Kapoor', style: new TextStyle(
+                          fontSize: 18.0, fontWeight: FontWeight.bold)),
+                      accountEmail: new Text('pranavkapoorr@gmail.com',
+                          style: new TextStyle(
+                              fontSize: 15.0, fontWeight: FontWeight.normal)),
+                      currentAccountPicture: new CircleAvatar(
+                        backgroundColor: Colors.black45,
+                        child: new Icon(
+                          Icons.account_circle, size: 50.0, color: Colors.white,
+                        ),
+                      ), //Circle Avatar
+                    ),
+                    new Divider(height: 0.0, color: Colors.grey ),
+                    new ListTile(leading: Icon(Icons.people),title: Text("NearBy"),trailing: Icon(Icons.navigate_next),),
+                    new Divider(height: defaultTargetPlatform == TargetPlatform.iOS ? 5.0 : 0.0, color: Colors.grey ),
+                    new ListTile(leading: Icon(Icons.person),title: Text("Account"),trailing: Icon(Icons.navigate_next),),
+                    new Divider(height: defaultTargetPlatform == TargetPlatform.iOS ? 5.0 : 0.0, color: Colors.grey),
+                    new ListTile(leading: Icon(Icons.help),title: Text("Help"),trailing: Icon(Icons.navigate_next),),
+                    new Divider(height: defaultTargetPlatform == TargetPlatform.iOS ? 5.0 : 0.0, color: Colors.grey),
+                    ListTile(leading: Icon(Icons.highlight),title: Text("Dark Theme"),trailing: new Switch(value: _useDarkTheme, onChanged: (bool value){
+                      setState(() {
+                        print(value);
+                        _useDarkTheme = value;
+                      });
+                    })),
+                    new Divider(height: defaultTargetPlatform == TargetPlatform.iOS ? 5.0 : 0.0, color: Colors.grey),
+                    new AboutListTile(
+                      applicationIcon: FlutterLogo(
+                        colors: Colors.blueGrey,
+                      ),
+                      icon: Icon(Icons.info),
+                      aboutBoxChildren: <Widget>[
+                        SizedBox(
+                          height: 10.0,
+                        ),
+                        Text(
+                          "Developed By Pranav Kapoor",
+                        ),
+                        Text(
+                          "pranavkapoorr",
+                        ),
+                      ],
+                      applicationName: "my-gps",
+                      applicationVersion: "1.0.0",
+                      applicationLegalese: "Apache License 2.0",
+                    )
                   ],
                 ),
-              ],
-            ) : Center(child: CircularProgressIndicator(),)
-          /*new Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: widgets,
-            )*/
+              ),
+              body: Stack(
+                children: <Widget>[
+                  _currentLocation != null ? new FlutterMap(
+                    options: new MapOptions(
+                      center: new LatLng(_currentLocation['latitude'],
+                          _currentLocation['longitude']),
+                      zoom: 15.0,
+                    ),
+                    layers: [
+                      new TileLayerOptions(
+                        urlTemplate: "https://maps.api.sygic.com/tile/{apiKey}/{z}/{x}/{y}",
+                        additionalOptions: {
+                          'apiKey': 'ffDgde5rCn6jjR35GJWD82hUC',
+                        },
+                      ),
+
+                      new MarkerLayerOptions(
+                        markers: [
+                          _buildMarker(new LatLng(_currentLocation['latitude'],
+                              _currentLocation['longitude'])),
+                        ],
+                      ),
+                    ],
+                  ) : Center(child: CircularProgressIndicator(),
+                  ),
+                  Positioned(
+                      top: 24.0,left: 5.0,
+                      child: FloatingActionButton(
+                        backgroundColor: Colors.black.withOpacity(0.1),
+                        child: Icon(Icons.menu,size: 30.0,),
+                        onPressed: (){
+                          _scaffoldKey.currentState.openDrawer();
+                        }
+                        ),
+                      )
+
+                ],
+              )
+            /*new Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: widgets,
+              )*/
+      ),
     );
   }
 
