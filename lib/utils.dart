@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mygps/MapView.dart';
-import 'package:mygps/nearby.dart';
 
 
 Widget myDrawer(BuildContext context) => Drawer(
@@ -20,10 +19,7 @@ Widget myDrawer(BuildContext context) => Drawer(
           ),
         ), //Circle Avatar
       ),
-      new Divider(height: 0.0, color: Colors.grey ),
-      new ListTile(leading: Icon(Icons.people),title: Text("NearBy"),trailing: Icon(Icons.navigate_next),onTap: (){
-        Navigator.push(context, new MaterialPageRoute(builder: (context)=>new NearBy()));
-      },),
+
       new Divider(height: 0.0, color: Colors.grey ),
       new ListTile(leading: Icon(Icons.map),title: Text("MapView"),trailing: Icon(Icons.navigate_next),onTap: (){
         Navigator.push(context, new MaterialPageRoute(builder: (context)=>new MapView()));

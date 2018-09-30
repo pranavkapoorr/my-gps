@@ -36,14 +36,7 @@ class FireBaseHelper{
         },
         onDone: (){
           // communication has been closed and removing from db
-          _firestore.collection(_collectionName).getDocuments().then((d){
-            d.documents.forEach((v){
-              if(v.data['name'] == this.name) {
-                print("clearing record");
-                v.data.clear();
-              }
-          });
-          });
+
           _isOn = false;
         }
     );
@@ -53,9 +46,12 @@ class FireBaseHelper{
     this.name = name;
     this.lat = lat;
     this.long = long;
-    await _firestore.collection(_collectionName).add({"name":name,"lat":lat,"long":long}).whenComplete(()=>print("added")).catchError((e)=>print(e.toString()));
+    await _firestore.collection(_collectionName).document(name).setData({"name":name,"lat":lat,"long":long}).whenComplete(()=>print("added")).catchError((e)=>print(e.toString()));
   }
 
+  removeFromdB()async{
+    await _firestore.collection(_collectionName).document(name).delete();
+  }
   /// ----------------------------------------------------------
   /// Callback which is invoked each time that we are receiving
   /// a message from the server

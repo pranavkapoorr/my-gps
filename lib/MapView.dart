@@ -1,3 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mygps/firebase_helper.dart';
+
 import 'utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -11,17 +14,34 @@ class MapView extends StatefulWidget{
 class _MapViewState extends State<MapView>{
   GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey();
   bool _showDetails = false;
+  bool _showPeople = false;
   bool currentWidget = true;
   Map<String,double> _currentLocation;
+  List<Marker> _markers = new List();
+  List<Widget> _people = new List();
 
 
   @override
   void initState() {
     super.initState();
+    realTimeDb.addListener(_onMessageFromDb);
     locationHelper.addListener(_onLocationChange);
 
   }
 
+  _onMessageFromDb(QuerySnapshot snapshot){
+    _markers.clear();
+    _people.clear();
+    snapshot.documents.forEach((d){
+      print(d.data);
+      if(d.data['name']!=null && d.data['lat']!=null && d.data['long']!=null){
+        setState(() {
+          _markers.add(_buildMarker(d.data['name'],new LatLng(d.data['lat'], d.data['long'])));
+          _people.add(ListTile(leading:CircleAvatar(child: Text(d.data['name'].toString().substring(0,1)),),title: Text(d.data['name']),));
+          });
+      }
+    });
+  }
   _onLocationChange(Map<String,double> location){
     setState(() {
       _currentLocation = location;
@@ -31,8 +51,12 @@ class _MapViewState extends State<MapView>{
   @override
   void dispose() {
     super.dispose();
+    _currentLocation.clear();
+    _markers.clear();
+    realTimeDb.removeListener(_onMessageFromDb);
     locationHelper.removeListener(_onLocationChange);
     _showDetails = false;
+    _showPeople = false;
   }
   @override
   Widget build(BuildContext context) {
@@ -81,10 +105,7 @@ class _MapViewState extends State<MapView>{
                   ),
 
                   new MarkerLayerOptions(
-                    markers: [
-                      _buildMarker(new LatLng(_currentLocation['latitude'],
-                          _currentLocation['longitude'])),
-                    ],
+                    markers: _markers
                   ),
                 ],
               ) : Center(child: CircularProgressIndicator(),
@@ -99,6 +120,42 @@ class _MapViewState extends State<MapView>{
                     }
                 ),
               ),
+              Positioned(
+                top: 24.0,right: 5.0,
+                child: FloatingActionButton(
+                  heroTag: "asd",
+                    backgroundColor: Colors.black.withOpacity(0.1),
+                    child: new Stack(
+                      overflow: Overflow.visible,
+                        children: <Widget>[
+                          new Icon(Icons.person_pin_circle),
+                          new Positioned(  // draw a red marble
+                            top: -5.0,
+                            right: -3.0,
+                            child: Container(
+                                decoration: BoxDecoration(color:Colors.redAccent,shape: BoxShape.circle),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(1.0),
+                                  child: Text(_markers.length.toString(),style: TextStyle(color: Colors.white,fontSize: 10.0,fontWeight: FontWeight.bold),),
+                                )
+                            ),
+                          )
+                        ]
+                    ),
+                    onPressed: (){
+                      if(_showPeople) {
+                        setState(() {
+                          _showPeople = false;
+                        });
+                      }else{
+                        setState(() {
+                          _showPeople = true;
+                        });
+                      }
+                    }
+                ),
+              ),
+
               Positioned(
                   bottom: 24.0,
                   right: 5.0,
@@ -132,6 +189,20 @@ class _MapViewState extends State<MapView>{
                     children: widgets,
                   ),
                 ),
+              ):Text(''),
+
+              _showPeople?Center(
+                child: Card(
+                  child: Container(
+                    width: MediaQuery.of(context).size.width/2,
+                    height: MediaQuery.of(context).size.height/2,
+                    padding: EdgeInsets.all(5.0),
+                    decoration: BoxDecoration(color: Colors.white,borderRadius: BorderRadius.circular(5.0)),
+                    child: ListView(
+                      children: _people,
+                    ),
+                  ),
+                ),
               ):Text('')
 
             ],
@@ -139,15 +210,18 @@ class _MapViewState extends State<MapView>{
     );
   }
 
-  Marker _buildMarker(LatLng latLng) {
+
+  Marker _buildMarker(String name,LatLng latLng) {
     return new Marker(
       point: latLng,
       width: 60.0,
       height: 55.0,
       anchor: AnchorPos.top,
       builder: (BuildContext context) =>
-          CircleAvatar(backgroundImage: NetworkImage(
-              "https://scontent.fyyz1-1.fna.fbcdn.net/v/t1.0-1/p320x320/11230099_10206835592669367_2911893136176495642_n.jpg?_nc_cat=111&oh=005e87a02bccaf399b5152534993298c&oe=5C2A1D27")),
+          CircleAvatar(child: Text(name.substring(0,1)),
+          ),
     );
   }
 }
+//_buildMarker(new LatLng(_currentLocation['latitude'],
+//_currentLocation['longitude'])),

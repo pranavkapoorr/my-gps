@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mygps/MapView.dart';
 import 'package:mygps/firebase_helper.dart';
 import 'package:mygps/location_helper.dart';
-import 'package:mygps/nearby.dart';
 
 class Login extends StatefulWidget{
   @override
@@ -59,7 +59,7 @@ class _LoginState extends State{
                       child: OutlineButton(
                         onPressed: (){
                           realTimeDb.send(_controller.text, _startLocation['latitude']!=null?_startLocation['latitude']:0.0, _startLocation['longitude']!=null?_startLocation['longitude']:0.0);
-                          Navigator.push(context, new MaterialPageRoute(builder: (context)=>new NearBy()));
+                          Navigator.push(context, new MaterialPageRoute(builder: (context)=>new MapView()));
                       },child: Text("Login"),
                       ),
                     ),
