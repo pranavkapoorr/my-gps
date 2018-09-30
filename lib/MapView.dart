@@ -1,10 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'utils.dart';
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong/latlong.dart';
-import 'package:location/location.dart';
+import 'package:mygps/location_helper.dart';
 
 class MapView extends StatefulWidget{
   _MapViewState createState() => new _MapViewState();
@@ -12,64 +10,28 @@ class MapView extends StatefulWidget{
 
 class _MapViewState extends State<MapView>{
   GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey();
-  Map<String, double> _startLocation;
-  Map<String, double> _currentLocation;
   bool _showDetails = false;
-
-  StreamSubscription<Map<String, double>> _locationSubscription;
-
-  Location _location = new Location();
-  bool _permission = false;
-  String error;
-
   bool currentWidget = true;
+  Map<String,double> _currentLocation;
 
 
   @override
   void initState() {
     super.initState();
+    locationHelper.addListener(_onLocationChange);
 
-    initPlatformState();
-
-    _locationSubscription =
-        _location.onLocationChanged().listen((Map<String, double> result) {
-          setState(() {
-            _currentLocation = result;
-          });
-        });
   }
 
-  // Platform messages are asynchronous, so we initialize in an async method.
-  initPlatformState() async {
-    Map<String, double> location;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-
-    try {
-      _permission = await _location.hasPermission();
-      location = await _location.getLocation();
-
-
-      error = null;
-    } on PlatformException catch (e) {
-      if (e.code == 'PERMISSION_DENIED') {
-        error = 'Permission denied';
-      } else if (e.code == 'PERMISSION_DENIED_NEVER_ASK') {
-        error =
-        'Permission denied - please ask the user to enable it from the app settings';
-      }
-
-      location = null;
-    }
-
-
+  _onLocationChange(Map<String,double> location){
     setState(() {
-      _startLocation = location;
+      _currentLocation = location;
     });
   }
 
   @override
   void dispose() {
     super.dispose();
+    locationHelper.removeListener(_onLocationChange);
     _showDetails = false;
   }
   @override
@@ -79,77 +41,29 @@ class _MapViewState extends State<MapView>{
 
     if (_currentLocation == null) {
       widgets = new List();
-    } else {
-      widgets = [
-        // new Image.network(
-        //    "https://maps.googleapis.com/maps/api/staticmap?center=${_currentLocation["latitude"]},${_currentLocation["longitude"]}&zoom=18&size=640x400&key=AIzaSyBMMvOUAWOALCyDYymBfqSvfqdy_IIKQco")
-      ];
+    } else{
+      widgets = [];
     }
     widgets.add(new Center(child: Text("Description",style: TextStyle(color: Colors.white,fontWeight: FontWeight.bold)),));
     widgets.add(new Center(
-        child: new Text(_startLocation != null
-            ? 'Start location: $_startLocation\n'
-            : 'Error: $error\n',style: TextStyle(color: Colors.white),)));
+        child: new Text(locationHelper.startLocation != null
+            ? 'Start location: ${locationHelper.startLocation}\n'
+            : 'Error: ${locationHelper.error}\n',style: TextStyle(color: Colors.white),)));
 
     widgets.add(new Center(
         child: new Text(_currentLocation != null
             ? 'Continuous location: $_currentLocation\n'
-            : 'Error: $error\n',style: TextStyle(color: Colors.white))));
+            : 'Error: ${locationHelper.error}\n',style: TextStyle(color: Colors.white))));
 
     widgets.add(new Center(
-        child: new Text(_permission
+        child: new Text(locationHelper.permission
             ? 'Has permission : Yes'
             : "Has permission : No",style: TextStyle(color: Colors.white))));
 
 
     return new Scaffold(
           key: _scaffoldKey,
-          drawer: Drawer(
-            child: ListView(
-              children: <Widget>[
-                new UserAccountsDrawerHeader(
-                  accountName: new Text('Pranav Kapoor', style: new TextStyle(
-                      fontSize: 18.0, fontWeight: FontWeight.bold)),
-                  accountEmail: new Text('pranavkapoorr@gmail.com',
-                      style: new TextStyle(
-                          fontSize: 15.0, fontWeight: FontWeight.normal)),
-                  currentAccountPicture: new CircleAvatar(
-                    backgroundColor: Colors.black45,
-                    child: new Icon(
-                      Icons.account_circle, size: 50.0, color: Colors.white,
-                    ),
-                  ), //Circle Avatar
-                ),
-                new Divider(height: 0.0, color: Colors.grey ),
-                new ListTile(leading: Icon(Icons.people),title: Text("NearBy"),trailing: Icon(Icons.navigate_next),),
-                new Divider(height: defaultTargetPlatform == TargetPlatform.iOS ? 5.0 : 0.0, color: Colors.grey ),
-                new ListTile(leading: Icon(Icons.person),title: Text("Account"),trailing: Icon(Icons.navigate_next),),
-                new Divider(height: defaultTargetPlatform == TargetPlatform.iOS ? 5.0 : 0.0, color: Colors.grey),
-                new ListTile(leading: Icon(Icons.help),title: Text("Help"),trailing: Icon(Icons.navigate_next),),
-                new Divider(height: defaultTargetPlatform == TargetPlatform.iOS ? 5.0 : 0.0, color: Colors.grey),
-                new AboutListTile(
-                  applicationIcon: FlutterLogo(
-                    colors: Colors.blueGrey,
-                  ),
-                  icon: Icon(Icons.info),
-                  aboutBoxChildren: <Widget>[
-                    SizedBox(
-                      height: 10.0,
-                    ),
-                    Text(
-                      "Developed By Pranav Kapoor",
-                    ),
-                    Text(
-                      "pranavkapoorr",
-                    ),
-                  ],
-                  applicationName: "my-gps",
-                  applicationVersion: "1.0.0",
-                  applicationLegalese: "Apache License 2.0",
-                )
-              ],
-            ),
-          ),
+          drawer: myDrawer(context),
           body: Stack(
             children: <Widget>[
               _currentLocation != null ? new FlutterMap(

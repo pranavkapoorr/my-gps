@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:mygps/MapView.dart';
-import 'package:mygps/websocket.dart';
+import 'package:mygps/firebase_helper.dart';
+import 'package:mygps/location_helper.dart';
+import 'package:mygps/nearby.dart';
 
 class Login extends StatefulWidget{
   @override
@@ -8,39 +9,40 @@ class Login extends StatefulWidget{
 }
 class _LoginState extends State{
   TextEditingController _controller = new TextEditingController();
+  Map<String,double> _startLocation;
 
   @override
   void initState() {
     super.initState();
-    sockets.initCommunication();
-    sockets.addListener(_onMessage);
+    realTimeDb.initCommunication();
+    locationHelper.initCommunication();
   }
 
-  _onMessage(message){
-    if(message.toString().contains("successfully added")){
-      print('added name');
-      Navigator.push(context, new MaterialPageRoute(builder: (context)=>new MapView()));
-    }
-  }
   @override
   Widget build(BuildContext context) {
+    _startLocation = locationHelper.startLocation;
+
+    var deviceSize = MediaQuery.of(context).size;
     return Scaffold(
       backgroundColor: Colors.lightBlue.shade50,
       body: Stack(
         children: <Widget>[
-          Image.asset("images/maps.gif",
-            colorBlendMode: BlendMode.darken,
-            color: Colors.black45,
-            scale: 0.0,
-            fit: BoxFit.cover,
+          Container(
+            decoration: BoxDecoration(
+              image:DecorationImage(
+                image: AssetImage("images/maps.gif",),
+                fit: BoxFit.cover,
+                colorFilter: ColorFilter.mode(Colors.black45, BlendMode.darken)
+              ),
+            ),
           ),
           Center(
             child: Card(
               elevation: 2.0,
               color: Colors.white.withOpacity(0.81),
               child: Container(
-                width: MediaQuery.of(context).size.width/1.5,
-                height: MediaQuery.of(context).size.height/2.5,
+                width: deviceSize.width/2,
+                height: deviceSize.height/3,
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
@@ -56,7 +58,8 @@ class _LoginState extends State{
                       padding: const EdgeInsets.all(8.0),
                       child: OutlineButton(
                         onPressed: (){
-                        sockets.send('{"name":"'+_controller.text+'"}');
+                          realTimeDb.send(_controller.text, _startLocation['latitude']!=null?_startLocation['latitude']:0.0, _startLocation['longitude']!=null?_startLocation['longitude']:0.0);
+                          Navigator.push(context, new MaterialPageRoute(builder: (context)=>new NearBy()));
                       },child: Text("Login"),
                       ),
                     ),
